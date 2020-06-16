@@ -1,10 +1,11 @@
 # data parameters
-dataset_name: imagenet
+dataset_name: places2_train
 data_with_subfolder: True
-train_data_path: /media/ouc/4T_A/datasets/ImageNet/ILSVRC2012_img_train/
+train_data_path: /mnt/9C5E1A4D5E1A2116/datasets/places2/data_large/
 val_data_path:
 resume:
-batch_size: 48
+# resume: checkpoints/imagenet/hole_benchmark/
+batch_size: 12
 image_shape: [256, 256, 3]
 mask_shape: [128, 128]
 mask_batch_same: True
@@ -19,8 +20,8 @@ mosaic_unit_size: 12
 # training parameters
 expname: benchmark
 cuda: True
-gpu_ids: [0, 1, 2]    # set the GPU ids to use, e.g. [0] or [1, 2]
-num_workers: 4
+gpu_ids: [1]    # set the GPU ids to use, e.g. [0] or [1, 2]
+num_workers: 8
 lr: 0.0001
 beta1: 0.5
 beta2: 0.9

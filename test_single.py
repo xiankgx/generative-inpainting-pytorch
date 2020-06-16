@@ -3,14 +3,13 @@ import random
 from argparse import ArgumentParser
 
 import torch
-import torch.nn as nn
 import torch.backends.cudnn as cudnn
+import torch.nn as nn
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
-
 from model.networks import Generator
-from utils.tools import get_config, random_bbox, mask_image, is_image_file, default_loader, normalize, get_model_list
-
+from utils.tools import (default_loader, get_config, get_model_list,
+                         is_image_file, mask_image, normalize, random_bbox)
 
 parser = ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/config.yaml',
@@ -23,6 +22,7 @@ parser.add_argument('--flow', type=str, default='')
 parser.add_argument('--checkpoint_path', type=str, default='')
 parser.add_argument('--iter', type=int, default=0)
 
+
 def main():
     args = parser.parse_args()
     config = get_config(args.config)
@@ -31,7 +31,8 @@ def main():
     cuda = config['cuda']
     device_ids = config['gpu_ids']
     if cuda:
-        os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(str(i) for i in device_ids)
+        os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(
+            str(i) for i in device_ids)
         device_ids = list(range(len(device_ids)))
         config['gpu_ids'] = device_ids
         cudnn.benchmark = True
@@ -59,7 +60,8 @@ def main():
                     x = transforms.Resize(config['image_shape'][:-1])(x)
                     x = transforms.CenterCrop(config['image_shape'][:-1])(x)
                     mask = transforms.Resize(config['image_shape'][:-1])(mask)
-                    mask = transforms.CenterCrop(config['image_shape'][:-1])(mask)
+                    mask = transforms.CenterCrop(
+                        config['image_shape'][:-1])(mask)
                     x = transforms.ToTensor()(x)
                     mask = transforms.ToTensor()(mask)[0].unsqueeze(dim=0)
                     x = normalize(x)
@@ -67,16 +69,20 @@ def main():
                     x = x.unsqueeze(dim=0)
                     mask = mask.unsqueeze(dim=0)
                 elif args.mask:
-                    raise TypeError("{} is not an image file.".format(args.mask))
+                    raise TypeError(
+                        "{} is not an image file.".format(args.mask))
                 else:
                     # Test a single ground-truth image with a random mask
                     ground_truth = default_loader(args.image)
-                    ground_truth = transforms.Resize(config['image_shape'][:-1])(ground_truth)
-                    ground_truth = transforms.CenterCrop(config['image_shape'][:-1])(ground_truth)
+                    ground_truth = transforms.Resize(
+                        config['image_shape'][:-1])(ground_truth)
+                    ground_truth = transforms.CenterCrop(
+                        config['image_shape'][:-1])(ground_truth)
                     ground_truth = transforms.ToTensor()(ground_truth)
                     ground_truth = normalize(ground_truth)
                     ground_truth = ground_truth.unsqueeze(dim=0)
-                    bboxes = random_bbox(config, batch_size=ground_truth.size(0))
+                    bboxes = random_bbox(
+                        config, batch_size=ground_truth.size(0))
                     x, mask = mask_image(ground_truth, bboxes, config)
 
                 # Set checkpoint path
@@ -90,13 +96,16 @@ def main():
                 # Define the trainer
                 netG = Generator(config['netG'], cuda, device_ids)
                 # Resume weight
-                last_model_name = get_model_list(checkpoint_path, "gen", iteration=args.iter)
+                last_model_name = get_model_list(
+                    checkpoint_path, "gen", iteration=args.iter)
                 netG.load_state_dict(torch.load(last_model_name))
                 model_iteration = int(last_model_name[-11:-3])
-                print("Resume from {} at iteration {}".format(checkpoint_path, model_iteration))
+                print("Resume from {} at iteration {}".format(
+                    checkpoint_path, model_iteration))
 
                 if cuda:
-                    netG = nn.parallel.DataParallel(netG, device_ids=device_ids)
+                    netG = nn.parallel.DataParallel(
+                        netG, device_ids=device_ids)
                     x = x.cuda()
                     mask = mask.cuda()
 
@@ -104,10 +113,12 @@ def main():
                 x1, x2, offset_flow = netG(x, mask)
                 inpainted_result = x2 * mask + x * (1. - mask)
 
-                vutils.save_image(inpainted_result, args.output, padding=0, normalize=True)
+                vutils.save_image(inpainted_result, args.output,
+                                  padding=0, normalize=True)
                 print("Saved the inpainted result to {}".format(args.output))
                 if args.flow:
-                    vutils.save_image(offset_flow, args.flow, padding=0, normalize=True)
+                    vutils.save_image(offset_flow, args.flow,
+                                      padding=0, normalize=True)
                     print("Saved offset flow to {}".format(args.flow))
             else:
                 raise TypeError("{} is not an image file.".format)

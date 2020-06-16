@@ -1,19 +1,18 @@
 import os
 import random
-import time
 import shutil
+import time
 from argparse import ArgumentParser
 
 import torch
-import torch.nn as nn
 import torch.backends.cudnn as cudnn
+import torch.nn as nn
 import torchvision.utils as vutils
-from tensorboardX import SummaryWriter
-
-from trainer import Trainer
 from data.dataset import Dataset
-from utils.tools import get_config, random_bbox, mask_image
+from tensorboardX import SummaryWriter
+from trainer import Trainer
 from utils.logger import get_logger
+from utils.tools import get_config, mask_image, random_bbox
 
 parser = ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/config.yaml',
@@ -29,7 +28,8 @@ def main():
     cuda = config['cuda']
     device_ids = config['gpu_ids']
     if cuda:
-        os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(str(i) for i in device_ids)
+        os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(
+            str(i) for i in device_ids)
         device_ids = list(range(len(device_ids)))
         config['gpu_ids'] = device_ids
         cudnn.benchmark = True
@@ -40,9 +40,11 @@ def main():
                                    config['mask_type'] + '_' + config['expname'])
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
-    shutil.copy(args.config, os.path.join(checkpoint_path, os.path.basename(args.config)))
+    shutil.copy(args.config, os.path.join(
+        checkpoint_path, os.path.basename(args.config)))
     writer = SummaryWriter(logdir=checkpoint_path)
-    logger = get_logger(checkpoint_path)    # get logger and configure it at the first call
+    # get logger and configure it at the first call
+    logger = get_logger(checkpoint_path)
 
     logger.info("Arguments: {}".format(args))
     # Set random seed
@@ -90,7 +92,8 @@ def main():
             trainer_module = trainer
 
         # Get the resume iteration to restart training
-        start_iteration = trainer_module.resume(config['resume']) if config['resume'] else 1
+        start_iteration = trainer_module.resume(
+            config['resume']) if config['resume'] else 1
 
         iterable_train_loader = iter(train_loader)
 
@@ -113,7 +116,8 @@ def main():
 
             ###### Forward pass ######
             compute_g_loss = iteration % config['n_critic'] == 0
-            losses, inpainted_result, offset_flow = trainer(x, bboxes, mask, ground_truth, compute_g_loss)
+            losses, inpainted_result, offset_flow = trainer(
+                x, bboxes, mask, ground_truth, compute_g_loss)
             # Scalars from different devices are gathered into vectors
             for k in losses.keys():
                 if not losses[k].dim() == 0:
@@ -122,7 +126,8 @@ def main():
             ###### Backward pass ######
             # Update D
             trainer_module.optimizer_d.zero_grad()
-            losses['d'] = losses['wgan_d'] + losses['wgan_gp'] * config['wgan_gp_lambda']
+            losses['d'] = losses['wgan_d'] + \
+                losses['wgan_gp'] * config['wgan_gp_lambda']
             losses['d'].backward()
             trainer_module.optimizer_d.step()
 
@@ -130,8 +135,8 @@ def main():
             if compute_g_loss:
                 trainer_module.optimizer_g.zero_grad()
                 losses['g'] = losses['l1'] * config['l1_loss_alpha'] \
-                              + losses['ae'] * config['ae_loss_alpha'] \
-                              + losses['wgan_g'] * config['gan_loss_alpha']
+                    + losses['ae'] * config['ae_loss_alpha'] \
+                    + losses['wgan_g'] * config['gan_loss_alpha']
                 losses['g'].backward()
                 trainer_module.optimizer_g.step()
 
@@ -157,10 +162,12 @@ def main():
                     viz_images = torch.stack([x[:viz_max_out], inpainted_result[:viz_max_out],
                                               offset_flow[:viz_max_out]], dim=1)
                 else:
-                    viz_images = torch.stack([x, inpainted_result, offset_flow], dim=1)
+                    viz_images = torch.stack(
+                        [x, inpainted_result, offset_flow], dim=1)
                 viz_images = viz_images.view(-1, *list(x.size())[1:])
                 vutils.save_image(viz_images,
-                                  '%s/niter_%03d.png' % (checkpoint_path, iteration),
+                                  '%s/niter_%03d.png' % (checkpoint_path,
+                                                         iteration),
                                   nrow=3 * 4,
                                   normalize=True)
 

@@ -1,9 +1,10 @@
 import os
-import torch
-import yaml
+
 import numpy as np
+import yaml
 from PIL import Image
 
+import torch
 import torch.nn.functional as F
 
 
@@ -25,7 +26,8 @@ def tensor_img_to_npimg(tensor_img):
     :return: a numpy array image with shape HxWxC
     """
     if not (torch.is_tensor(tensor_img) and tensor_img.ndimension() == 3):
-        raise NotImplementedError("Not supported tensor image. Only tensors with dimension CxHxW are supported.")
+        raise NotImplementedError(
+            "Not supported tensor image. Only tensors with dimension CxHxW are supported.")
     npimg = np.transpose(tensor_img.numpy(), (1, 2, 0))
     npimg = npimg.squeeze()
     assert isinstance(npimg, np.ndarray) and (npimg.ndim in {2, 3})
@@ -35,6 +37,7 @@ def tensor_img_to_npimg(tensor_img):
 # Change the values of tensor x from range [0, 1] to [-1, 1]
 def normalize(x):
     return x.mul_(2).add_(-1)
+
 
 def same_padding(images, ksizes, strides, rates):
     assert len(images.size()) == 4
@@ -131,7 +134,8 @@ def bbox2mask(bboxes, height, width, max_delta_h, max_delta_w):
         bbox = bboxes[i]
         delta_h = np.random.randint(max_delta_h // 2 + 1)
         delta_w = np.random.randint(max_delta_w // 2 + 1)
-        mask[i, :, bbox[0] + delta_h:bbox[0] + bbox[2] - delta_h, bbox[1] + delta_w:bbox[1] + bbox[3] - delta_w] = 1.
+        mask[i, :, bbox[0] + delta_h:bbox[0] + bbox[2] - delta_h,
+             bbox[1] + delta_w:bbox[1] + bbox[3] - delta_w] = 1.
     return mask
 
 
@@ -141,7 +145,8 @@ def test_bbox2mask():
     margin = [0, 0]
     max_delta_shape = [32, 32]
     bbox = random_bbox(image_shape)
-    mask = bbox2mask(bbox, image_shape[0], image_shape[1], max_delta_shape[0], max_delta_shape[1])
+    mask = bbox2mask(
+        bbox, image_shape[0], image_shape[1], max_delta_shape[0], max_delta_shape[1])
     return mask
 
 
@@ -166,8 +171,10 @@ def mask_image(x, bboxes, config):
     elif config['mask_type'] == 'mosaic':
         # TODO: Matching the mosaic patch size and the mask size
         mosaic_unit_size = config['mosaic_unit_size']
-        downsampled_image = F.interpolate(x, scale_factor=1. / mosaic_unit_size, mode='nearest')
-        upsampled_image = F.interpolate(downsampled_image, size=(height, width), mode='nearest')
+        downsampled_image = F.interpolate(
+            x, scale_factor=1. / mosaic_unit_size, mode='nearest')
+        upsampled_image = F.interpolate(
+            downsampled_image, size=(height, width), mode='nearest')
         result = upsampled_image * mask + x * (1. - mask)
     else:
         raise NotImplementedError('Not implemented mask type.')
@@ -203,7 +210,8 @@ def spatial_discounting_mask(config):
         mask_values = np.expand_dims(mask_values, 0)
     else:
         mask_values = np.ones(shape)
-    spatial_discounting_mask_tensor = torch.tensor(mask_values, dtype=torch.float32)
+    spatial_discounting_mask_tensor = torch.tensor(
+        mask_values, dtype=torch.float32)
     if config['cuda']:
         spatial_discounting_mask_tensor = spatial_discounting_mask_tensor.cuda()
     return spatial_discounting_mask_tensor
@@ -407,23 +415,28 @@ def make_color_wheel():
     colorwheel[0:RY, 1] = np.transpose(np.floor(255 * np.arange(0, RY) / RY))
     col += RY
     # YG
-    colorwheel[col:col + YG, 0] = 255 - np.transpose(np.floor(255 * np.arange(0, YG) / YG))
+    colorwheel[col:col + YG, 0] = 255 - \
+        np.transpose(np.floor(255 * np.arange(0, YG) / YG))
     colorwheel[col:col + YG, 1] = 255
     col += YG
     # GC
     colorwheel[col:col + GC, 1] = 255
-    colorwheel[col:col + GC, 2] = np.transpose(np.floor(255 * np.arange(0, GC) / GC))
+    colorwheel[col:col + GC,
+               2] = np.transpose(np.floor(255 * np.arange(0, GC) / GC))
     col += GC
     # CB
-    colorwheel[col:col + CB, 1] = 255 - np.transpose(np.floor(255 * np.arange(0, CB) / CB))
+    colorwheel[col:col + CB, 1] = 255 - \
+        np.transpose(np.floor(255 * np.arange(0, CB) / CB))
     colorwheel[col:col + CB, 2] = 255
     col += CB
     # BM
     colorwheel[col:col + BM, 2] = 255
-    colorwheel[col:col + BM, 0] = np.transpose(np.floor(255 * np.arange(0, BM) / BM))
+    colorwheel[col:col + BM,
+               0] = np.transpose(np.floor(255 * np.arange(0, BM) / BM))
     col += + BM
     # MR
-    colorwheel[col:col + MR, 2] = 255 - np.transpose(np.floor(255 * np.arange(0, MR) / MR))
+    colorwheel[col:col + MR, 2] = 255 - \
+        np.transpose(np.floor(255 * np.arange(0, MR) / MR))
     colorwheel[col:col + MR, 0] = 255
     return colorwheel
 
@@ -438,7 +451,8 @@ def pt_make_color_wheel():
     colorwheel[0:RY, 1] = torch.arange(0, RY, dtype=torch.float32) / RY
     col += RY
     # YG
-    colorwheel[col:col + YG, 0] = 1. - (torch.arange(0, YG, dtype=torch.float32) / YG)
+    colorwheel[col:col + YG, 0] = 1. - \
+        (torch.arange(0, YG, dtype=torch.float32) / YG)
     colorwheel[col:col + YG, 1] = 1.
     col += YG
     # GC
@@ -446,7 +460,8 @@ def pt_make_color_wheel():
     colorwheel[col:col + GC, 2] = torch.arange(0, GC, dtype=torch.float32) / GC
     col += GC
     # CB
-    colorwheel[col:col + CB, 1] = 1. - (torch.arange(0, CB, dtype=torch.float32) / CB)
+    colorwheel[col:col + CB, 1] = 1. - \
+        (torch.arange(0, CB, dtype=torch.float32) / CB)
     colorwheel[col:col + CB, 2] = 1.
     col += CB
     # BM
@@ -454,7 +469,8 @@ def pt_make_color_wheel():
     colorwheel[col:col + BM, 0] = torch.arange(0, BM, dtype=torch.float32) / BM
     col += BM
     # MR
-    colorwheel[col:col + MR, 2] = 1. - (torch.arange(0, MR, dtype=torch.float32) / MR)
+    colorwheel[col:col + MR, 2] = 1. - \
+        (torch.arange(0, MR, dtype=torch.float32) / MR)
     colorwheel[col:col + MR, 0] = 1.
     return colorwheel
 

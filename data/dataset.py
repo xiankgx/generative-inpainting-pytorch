@@ -1,19 +1,25 @@
-import sys
-import torch.utils.data as data
-from os import listdir
-from utils.tools import default_loader, is_image_file, normalize
 import os
+import sys
+from os import listdir
 
+import torch.utils.data as data
 import torchvision.transforms as transforms
+from utils.tools import default_loader, is_image_file, normalize
 
 
 class Dataset(data.Dataset):
     def __init__(self, data_path, image_shape, with_subfolder=False, random_crop=True, return_name=False):
         super(Dataset, self).__init__()
+        print(f"data_path: {data_path}")
+        print(f"with_subfolder: {with_subfolder}")
+
         if with_subfolder:
             self.samples = self._find_samples_in_subfolders(data_path)
         else:
             self.samples = [x for x in listdir(data_path) if is_image_file(x)]
+
+        print(f"Found files: {len(self.samples)}")
+
         self.data_path = data_path
         self.image_shape = image_shape[:-1]
         self.random_crop = random_crop
@@ -50,13 +56,17 @@ class Dataset(data.Dataset):
         Ensures:
             No class is a subdirectory of another.
         """
+
         if sys.version_info >= (3, 5):
             # Faster and available in Python 3.5 and above
             classes = [d.name for d in os.scandir(dir) if d.is_dir()]
         else:
-            classes = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
+            classes = [d for d in os.listdir(
+                dir) if os.path.isdir(os.path.join(dir, d))]
         classes.sort()
+
         class_to_idx = {classes[i]: i for i in range(len(classes))}
+
         samples = []
         for target in sorted(class_to_idx.keys()):
             d = os.path.join(dir, target)
